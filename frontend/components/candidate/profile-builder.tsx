@@ -13,7 +13,6 @@ import {
 } from "@/app/actions/profile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { CandidateProfile } from "@/lib/types";

@@ -261,8 +261,9 @@ Rules:
           .map((item) => item.name),
         mode: "ai" as const,
       };
-    } catch (e: any) {
-      console.error(`AI turn failed with model ${model}:`, e?.message || e);
+    } catch (e: unknown) {
+      const error = e as Error;
+      console.error(`AI turn failed with model ${model}:`, error?.message || error);
       continue;
     }
   }
