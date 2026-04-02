@@ -1,0 +1,19 @@
+{
+  "name": "ai-recruitment-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend scripts, data layer, AI integration, and DB tooling for the AI-Powered Recruitment Platform.",
+  "scripts": {
+    "db:seed": "tsx scripts/seed-pocketbase.ts"
+  },
+  "dependencies": {
+    "groq-sdk": "^1.1.2",
+    "pocketbase": "^0.26.8",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}
