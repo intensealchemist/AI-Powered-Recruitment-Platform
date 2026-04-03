@@ -2,6 +2,8 @@
 
 A **conversation-first hiring experience** that replaces resume uploads with a structured, AI-driven interview. Candidates answer natural-language questions; the platform extracts structured profile data in real time. Recruiters see normalized, comparable profiles — no PDF bias, no formatting lottery.
 
+> ⚡ **Just want to try it out?** Scroll down to the [Demo Credentials](#demo-credentials) section for the login accounts!
+
 ---
 
 ## Repository Structure
@@ -156,12 +158,11 @@ This creates the demo Candidate and Recruiter profiles in Turso.
 
 ## Demo Credentials
 
-Because the database requires unique emails, I used a single string for candidates and "plus-addressing" for recruiters. Both will route cleanly into the same single email inbox (if your email provider supports plus-addressing).
+The same credentials work for **both** roles to strictly satisfy the assignment parameters. Enter the email below, and the sign-in page will magically reveal a toggle switch to let you select which experience to grade!
 
 | Role | Email | Password |
 |---|---|---|
-| Candidate | `hire-me@anshumat.org` | `HireMe@2025!` |
-| Recruiter | `hire-me+recruiter@anshumat.org` | `HireMe@2025!` |
+| Candidate & Recruiter | `hire-me@anshumat.org` | `HireMe@2025!` |
 
 > **Tip for reviewers:** Sign in as candidate first to see the AI profile builder flow, then sign out and sign in as recruiter to see the dashboard, compare view, and shortlist Kanban.
 

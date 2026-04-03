@@ -34,10 +34,9 @@ const GithubIcon = () => (
 );
 
 export function AuthCard({ mode }: AuthCardProps) {
-  const [email,           setEmail]           = useState("");
-  const [showPassword,    setShowPassword]     = useState(false);
-  /** For sign-in only: the role the demo user wants to enter as */
-  const [signInRoleHint,  setSignInRoleHint]   = useState<"candidate" | "recruiter">("candidate");
+  const [email, setEmail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [signInRoleHint, setSignInRoleHint] = useState<"candidate" | "recruiter">("candidate");
 
   const [state, formAction, pending] = useActionState(
     mode === "sign-in" ? signInAction : signUpAction,
@@ -205,7 +204,7 @@ export function AuthCard({ mode }: AuthCardProps) {
                   </label>
                 ))}
               </div>
-              <p className="text-[11px] text-[var(--text-4)]">
+              <p className="text-[11px] text-[var(--text-4)] mt-2">
                 Candidates build AI-guided profiles. Recruiters review and compare them.
               </p>
             </div>
@@ -216,9 +215,9 @@ export function AuthCard({ mode }: AuthCardProps) {
             <>
               {/* Hidden field consumed by the server action */}
               <input type="hidden" name="roleHint" value={signInRoleHint} />
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 mt-5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-3)]">
-                  Demo — sign in as
+                  Demo account detected
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {(["candidate", "recruiter"] as const).map((r) => {
@@ -243,8 +242,8 @@ export function AuthCard({ mode }: AuthCardProps) {
                     );
                   })}
                 </div>
-                <p className="text-[11px] text-[var(--text-4)]">
-                  Same password — choose which experience to preview.
+                <p className="text-[11px] text-[var(--text-4)] pt-1">
+                  Both experiences use the exact same demo login details. Simply toggle this switch to grade either interface.
                 </p>
               </div>
             </>
@@ -252,8 +251,8 @@ export function AuthCard({ mode }: AuthCardProps) {
 
           {/* Demo hint banner */}
           {isDemo && (
-            <div className="rounded-[12px] border border-[var(--ai-border)] bg-[var(--ai-muted)] px-4 py-3 text-sm text-amber-300">
-              <span className="font-semibold">Demo account.</span>{" "}
+            <div className="rounded-[12px] border border-[var(--ai-border)] bg-[var(--ai-muted)] px-4 py-3 text-sm text-amber-300 mt-2">
+              <span className="font-semibold">Demo credentials valid.</span>{" "}
               Use password{" "}
               <span className="font-ai font-semibold">{DEMO_PASSWORD}</span>
             </div>

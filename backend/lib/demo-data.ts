@@ -22,7 +22,7 @@ export const demoUsers: SessionUser[] = [
   {
     id: "user-demo-recruiter",
     name: "Recruiter",
-    email: "hire-me+recruiter@anshumat.org",
+    email: "recruiter@anshumat.org",
     password: "HireMe@2025!",
     role: "recruiter",
     company: "TalentFlow",

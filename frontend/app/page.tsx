@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  ArrowDown,
   ArrowRight,
   CheckCircle2,
   Sparkles,
@@ -110,11 +111,12 @@ export default async function Home() {
                   <ArrowRight className="size-4" />
                 </Button>
               </Link>
-              <Link href="/sign-in">
-                <Button size="lg" type="button" variant="secondary">
-                  Explore demo account
+              <a href="#demo-accounts">
+                <Button size="lg" type="button" variant="secondary" className="group">
+                  View demo credentials
+                  <ArrowDown className="size-4 ml-1.5 opacity-70 transition-transform duration-300 group-hover:translate-y-1" />
                 </Button>
-              </Link>
+              </a>
             </div>
 
             {/* Stats */}
@@ -264,7 +266,7 @@ export default async function Home() {
       </section>
 
       {/* ── DEMO CREDENTIALS ──────────────────────────────────────────── */}
-      <section className="mx-auto max-w-2xl">
+      <section id="demo-accounts" className="mx-auto max-w-2xl scroll-mt-24">
         <div className="rounded-[20px] border border-[var(--ai-border)] bg-[var(--ai-muted)] p-8 text-center">
           <Sparkles className="mx-auto mb-3 size-6 text-[var(--ai)]" />
           <p className="text-sm font-semibold uppercase tracking-widest text-[var(--ai)]">
@@ -275,6 +277,9 @@ export default async function Home() {
           </p>
           <p className="mt-1 font-ai text-sm text-[var(--text-2)]">
             Password: <span className="text-[var(--ai)]">HireMe@2025!</span>
+          </p>
+          <p className="mt-4 text-sm text-[var(--text-3)] max-w-md mx-auto">
+            The exact same credentials work for <strong>both</strong> Candidate and Recruiter views. The log-in screen has a toggle to pick which assignment requirement you want to grade!
           </p>
           <div className="mt-5">
             <Link href="/sign-in">

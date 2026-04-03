@@ -109,7 +109,7 @@ async function main() {
   console.log("\n✅  Turso seed completed successfully!\n");
   console.log("Demo accounts:");
   console.log("  Candidate  hire-me@anshumat.org  /  HireMe@2025!");
-  console.log("  Recruiter  hire-me+recruiter@anshumat.org  /  HireMe@2025!");
+  console.log("  Recruiter  recruiter@anshumat.org  /  HireMe@2025!");
 }
 
 main().catch((error) => {
