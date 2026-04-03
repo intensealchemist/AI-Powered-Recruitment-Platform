@@ -11,7 +11,7 @@ import {
   ConversationMessage,
   Education,
   Experience,
-  Project,
+
   SessionUser,
   ShortlistRecord,
   ShortlistStage,

@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { BriefcaseBusiness, Sparkles, User2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import { SessionUser } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { UserDropdown } from "./user-dropdown";
 
 const navByRole = {
   candidate: [
@@ -25,9 +26,6 @@ export function SiteHeader({
   pathname: string;
 }) {
   const navItems = user ? navByRole[user.role] : [];
-  const initials = user?.name
-    ? user.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
-    : null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[var(--bg-base)]/75 backdrop-blur-2xl">
@@ -93,31 +91,7 @@ export function SiteHeader({
               </Link>
             </div>
           ) : (
-            <div className="flex items-center gap-2.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 backdrop-blur-sm">
-              {/* Avatar */}
-              <div
-                className={cn(
-                  "flex size-7 items-center justify-center rounded-full text-[11px] font-bold",
-                  user.role === "recruiter"
-                    ? "bg-[var(--primary)] text-white"
-                    : "bg-[var(--ai)] text-slate-950",
-                )}
-              >
-                {initials ?? (
-                  user.role === "recruiter"
-                    ? <BriefcaseBusiness className="size-3.5" />
-                    : <User2 className="size-3.5" />
-                )}
-              </div>
-              <div className="hidden sm:block">
-                <p className="text-[13px] font-semibold text-[var(--text-1)] leading-none">
-                  {user.name}
-                </p>
-                <p className="mt-0.5 text-[11px] text-[var(--text-3)] leading-none capitalize">
-                  {user.designation || user.role}
-                </p>
-              </div>
-            </div>
+            <UserDropdown user={user} />
           )}
         </div>
       </div>
