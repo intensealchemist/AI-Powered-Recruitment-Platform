@@ -20,8 +20,8 @@ function loadEnv() {
 loadEnv();
 
 import { getDb, hasTursoConfig } from "../lib/db";
-import { users, profiles, shortlists } from "../lib/db/schema";
-import { demoProfiles, demoShortlists, demoUsers } from "../lib/demo-data";
+import { users, profiles } from "../lib/db/schema";
+import { demoProfiles, demoUsers } from "../lib/demo-data";
 
 async function main() {
   if (!hasTursoConfig()) {
@@ -106,29 +106,10 @@ async function main() {
   }
   console.log(`  ✔  Upserted ${demoProfiles.length} profiles`);
 
-  // Upsert shortlists
-  for (const shortlist of demoShortlists) {
-    await db
-      .insert(shortlists)
-      .values({
-        id: shortlist.id,
-        recruiterId: shortlist.recruiterId,
-        candidateId: shortlist.candidateId,
-        stage: shortlist.stage,
-        notes: shortlist.notes,
-        addedAt: shortlist.addedAt,
-      })
-      .onConflictDoUpdate({
-        target: shortlists.id,
-        set: {
-          stage: shortlist.stage,
-          notes: shortlist.notes,
-        },
-      });
-  }
-  console.log(`  ✔  Upserted ${demoShortlists.length} shortlist entries`);
-
-  console.log("\n✅  Turso seed completed successfully!");
+  console.log("\n✅  Turso seed completed successfully!\n");
+  console.log("Demo accounts:");
+  console.log("  Candidate  hire-me@anshumat.org  /  HireMe@2025!");
+  console.log("  Recruiter  hire-me+recruiter@anshumat.org  /  HireMe@2025!");
 }
 
 main().catch((error) => {

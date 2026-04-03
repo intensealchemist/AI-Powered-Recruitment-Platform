@@ -30,8 +30,7 @@ A **conversation-first hiring experience** that replaces resume uploads with a s
 | Path | Purpose |
 |---|---|
 | `lib/groq.ts` | Groq API client — conversational extraction, JSON parsing, model fallback |
-| `lib/data.ts` | Data access layer — Turso reads/writes with in-memory demo fallback |
-| `lib/demo-data.ts` | Seeded demo profiles for offline/demo mode |
+| `lib/data.ts` | Data access layer — Turso queries |
 | `lib/db/index.ts` | Turso (libSQL) + Drizzle ORM client singleton |
 | `lib/db/schema.ts` | Drizzle table schema definitions |
 | `lib/auth.ts` | Auth helpers — session management |
@@ -51,7 +50,7 @@ A **conversation-first hiring experience** that replaces resume uploads with a s
 | **Language** | TypeScript (strict) | End-to-end type safety across the frontend/backend boundary. Shared `types.ts` ensures candidate profile shapes never drift between the UI and the data layer. |
 | **Styling** | Tailwind CSS 4 | Utility-first styling keeps component markup self-documenting. v4's new engine removes the purge step and compiles 40 % faster than v3. |
 | **AI / LLM** | Groq API (Llama 3) | Sub-second inference latency makes real-time conversational extraction feel responsive. JSON-mode output eliminates fragile regex parsing. Automatic fallback to a secondary model handles rate limits gracefully. |
-| **Database** | Turso (libSQL) + Drizzle ORM | Serverless SQLite at the edge — persistent across Vercel deployments, zero cold-start cost, generous free tier. Drizzle provides type-safe query building with schema-first migrations. Falls back to in-memory demo data when `TURSO_DATABASE_URL` is not set. |
+| **Database** | Turso (libSQL) + Drizzle ORM | Serverless SQLite at the edge — persistent across Vercel deployments, zero cold-start cost, generous free tier. Drizzle provides type-safe query building with schema-first migrations. |
 | **Client data** | TanStack Query v5 | Declarative server-state fetching for the recruiter dashboard. Stale-while-revalidate keeps the shortlist board live without polling noise. |
 | **PDF export** | `@react-pdf/renderer` | Renders ATS-friendly structured resumes from in-memory profile data — no HTML-to-PDF conversion heuristics, no layout surprises. |
 | **Forms** | React Hook Form + Zod | Uncontrolled form performance with schema-validated, type-safe field resolution. Zod schemas are shared between the server action validation layer and client-side error messages. |
@@ -65,7 +64,7 @@ A **conversation-first hiring experience** that replaces resume uploads with a s
 ### Prerequisites
 
 - Node.js ≥ 20
-- A free [Turso](https://app.turso.tech) account (or skip for in-memory demo mode)
+- A free [Turso](https://app.turso.tech) account
 - A [Groq API key](https://console.groq.com/)
 
 ---
@@ -98,7 +97,7 @@ Fill in `.env.local`:
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 GROQ_API_KEY=your_groq_api_key
 
-# Turso — get from https://app.turso.tech (leave blank for in-memory demo mode)
+# Turso — get from https://app.turso.tech
 TURSO_DATABASE_URL=libsql://your-db.turso.io
 TURSO_AUTH_TOKEN=your_turso_auth_token
 ```
@@ -116,8 +115,6 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
-
-> **No Turso?** The app automatically falls back to in-memory demo data. Leave `TURSO_DATABASE_URL` blank and skip the seeding step.
 
 ---
 
@@ -140,13 +137,14 @@ Fill in `.env` with the same Groq and Turso values.
 
 ### 4. Seed demo data (optional)
 
-From the `backend/` directory (requires `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` in `.env.local`):
+From the `backend/` directory (requires `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` in `frontend/.env.local` or `backend/.env`):
 
 ```bash
+cd backend  # Make sure you are in the backend directory!
 npm run db:seed
 ```
 
-This creates demo users, candidate profiles, and shortlist records in Turso.
+This creates the demo Candidate and Recruiter profiles in Turso.
 
 ---
 
@@ -158,12 +156,12 @@ This creates demo users, candidate profiles, and shortlist records in Turso.
 
 ## Demo Credentials
 
-The same credentials work for **both** roles. After signing in, the platform routes you based on the role you selected during sign-up.
+Because the database requires unique emails, I used a single string for candidates and "plus-addressing" for recruiters. Both will route cleanly into the same single email inbox (if your email provider supports plus-addressing).
 
 | Role | Email | Password |
 |---|---|---|
 | Candidate | `hire-me@anshumat.org` | `HireMe@2025!` |
-| Recruiter | `hire-me@anshumat.org` | `HireMe@2025!` |
+| Recruiter | `hire-me+recruiter@anshumat.org` | `HireMe@2025!` |
 
 > **Tip for reviewers:** Sign in as candidate first to see the AI profile builder flow, then sign out and sign in as recruiter to see the dashboard, compare view, and shortlist Kanban.
 
