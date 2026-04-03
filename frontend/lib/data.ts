@@ -523,3 +523,18 @@ export async function deleteAccount(userId: string) {
     }
   }
 }
+
+export async function resetProfileData(userId: string) {
+  const profile = await getCandidateProfile(userId);
+  if (!profile) throw new Error("Candidate profile not found.");
+
+  return saveProfile({
+    ...profile,
+    headline: "",
+    summary: "",
+    aiSummary: "",
+    experiences: [],
+    skills: [],
+    conversationLogs: [],
+  });
+}

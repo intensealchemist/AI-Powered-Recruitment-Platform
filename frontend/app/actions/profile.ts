@@ -10,13 +10,14 @@ import {
   getCandidateProfile,
   publishProfile,
   regenerateShareToken,
+  resetProfileData,
   saveProfile,
   updateProfileArrays,
   updateShortlistStage,
 } from "@/lib/data";
 import { processAiTurn } from "@/lib/groq";
 import { calculateCompletionScore } from "@/lib/profile";
-import { ManualProfileFallbackInput, ShortlistStage } from "@/lib/types";
+import { ManualProfileFallbackInput, ShortlistStage, CandidateProfile } from "@/lib/types";
 import { headers } from "next/headers";
 import { aiLimiter } from "@/lib/rate-limit";
 
@@ -24,6 +25,7 @@ export async function processConversationAction(input: {
   message: string;
   sessionId: string;
   deviceId: string;
+  chatHistory: { role: "user" | "assistant"; content: string; createdAt: string }[];
 }) {
   const ip = (await headers()).get("x-forwarded-for") ?? "127.0.0.1";
   const { success } = await aiLimiter.limit(ip);
@@ -38,38 +40,44 @@ export async function processConversationAction(input: {
     throw new Error("Profile not found.");
   }
 
-  const messageTimestamp = new Date().toISOString();
-
-  await appendConversation({
-    userId: user.id,
-    sessionId: input.sessionId,
-    deviceId: input.deviceId,
-    messages: [
-      {
-        role: "user",
-        content: input.message,
-        createdAt: messageTimestamp,
-      },
-    ],
-  });
-
+  // We rely on the frontend to pass the fully constructed chat history locally
+  // to avoid Vercel DB caching overwrites during sequential appends.
   const result = await processAiTurn({
     message: input.message,
     profile,
     deviceId: input.deviceId,
   });
 
-  const saved = await appendConversation({
-    userId: user.id,
+  const nextLogs = [...profile.conversationLogs];
+  const existingIndex = nextLogs.findIndex((item) => item.sessionId === input.sessionId);
+
+  const newLogEntry = {
     sessionId: input.sessionId,
-    deviceId: input.deviceId,
+    createdAt: new Date().toISOString(),
     messages: [
+      ...input.chatHistory.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+        createdAt: msg.createdAt,
+      })),
       {
-        role: "assistant",
+        role: "assistant" as const,
         content: result.assistantMessage,
         createdAt: new Date().toISOString(),
       },
     ],
+  };
+
+  if (existingIndex > -1) {
+    nextLogs[existingIndex] = newLogEntry;
+  } else {
+    nextLogs.unshift(newLogEntry);
+  }
+
+  // Use the resulting profile from processAiTurn and bolt our updated logs onto it
+  const finalProfile = await saveProfile({
+    ...result.profile,
+    conversationLogs: nextLogs,
   });
 
   revalidatePath("/candidate/builder");
@@ -78,7 +86,7 @@ export async function processConversationAction(input: {
 
   return {
     ...result,
-    profile: saved,
+    profile: finalProfile,
   };
 }
 
@@ -246,4 +254,24 @@ export async function deleteAccountAction() {
   await clearSession();
   revalidatePath("/");
   redirect("/");
+}
+
+export async function resetProfileAction() {
+  const user = await requireSession("candidate");
+  const profile = await resetProfileData(user.id);
+  
+  revalidatePath("/candidate/builder");
+  revalidatePath("/candidate/review");
+  
+  return profile;
+}
+
+export async function restoreProfileAction(profilePayload: CandidateProfile) {
+  const user = await requireSession("candidate");
+  if (profilePayload.userId !== user.id) throw new Error("Unauthorized");
+  
+  const saved = await saveProfile(profilePayload);
+  revalidatePath("/candidate/builder");
+  revalidatePath("/candidate/review");
+  return saved;
 }
