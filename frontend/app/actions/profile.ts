@@ -17,12 +17,20 @@ import {
 import { processAiTurn } from "@/lib/groq";
 import { calculateCompletionScore } from "@/lib/profile";
 import { ManualProfileFallbackInput, ShortlistStage } from "@/lib/types";
+import { headers } from "next/headers";
+import { aiLimiter } from "@/lib/rate-limit";
 
 export async function processConversationAction(input: {
   message: string;
   sessionId: string;
   deviceId: string;
 }) {
+  const ip = (await headers()).get("x-forwarded-for") ?? "127.0.0.1";
+  const { success } = await aiLimiter.limit(ip);
+
+  if (!success) {
+    throw new Error("You are generating responses too quickly. Please wait a few seconds.");
+  }
   const user = await requireSession("candidate");
   const profile = await getCandidateProfile(user.id);
 
