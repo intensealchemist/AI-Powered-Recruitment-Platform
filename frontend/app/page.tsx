@@ -60,7 +60,7 @@ export default async function Home() {
       ? "/recruiter"
       : user?.role === "candidate"
         ? "/candidate/intro"
-        : "/sign-up";
+        : "/sign-in";
 
   return (
     <div className="space-y-20 pb-20">
