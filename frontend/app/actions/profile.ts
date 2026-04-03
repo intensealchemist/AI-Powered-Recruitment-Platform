@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 
 import { clearSession, requireSession } from "@/lib/auth";
 import {
-  appendConversation,
   deleteAccount,
   getCandidateProfile,
   publishProfile,
@@ -153,9 +152,10 @@ export async function publishProfileAction() {
   const profile = await publishProfile(user.id, true);
 
   revalidatePath("/candidate/review");
+  revalidatePath("/candidate/confirmation");
   revalidatePath(`/p/${profile.shareToken}`);
 
-  return profile;
+  redirect("/candidate/confirmation");
 }
 
 export async function saveDraftAction() {

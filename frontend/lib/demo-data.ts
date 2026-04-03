@@ -57,6 +57,22 @@ export const demoUsers: SessionUser[] = [
     image: "https://api.dicebear.com/9.x/initials/svg?seed=Recruiter",
     verified: true,
   },
+  /** Demo recruiter — same credentials as the candidate demo account.
+   *  Reviewers can sign in as recruiter by toggling the "I am a…" selector
+   *  on the sign-in page and using hire-me@anshumat.org / HireMe@2025!
+   */
+  {
+    id: "user-demo-recruiter",
+    name: "Anshu (Recruiter)",
+    email: "hire-me@anshumat.org",
+    password: "HireMe@2025!",
+    role: "recruiter",
+    company: "TalentFlow",
+    designation: "Hiring Manager",
+    image: "https://api.dicebear.com/9.x/initials/svg?seed=Anshu+R",
+    demo: true,
+    verified: true,
+  },
 ];
 
 const baseProfiles: CandidateProfile[] = [

@@ -1,13 +1,10 @@
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 
 import { demoProfiles, demoShortlists, demoUsers } from "@/lib/demo-data";
 import { calculateCompletionScore, computeMatchScore, getExperienceYears } from "@/lib/profile";
-import {
-  PB_COLLECTIONS,
-  createPocketBaseAdminClient,
-  createPocketBaseClient,
-  hasPocketBaseConfig,
-} from "@/lib/pocketbase";
+import { getDb, hasTursoConfig } from "@/lib/db";
+import { users as usersTable, profiles as profilesTable, shortlists as shortlistsTable } from "@/lib/db/schema";
 import {
   AIConversationLog,
   CandidateCardData,
@@ -15,6 +12,7 @@ import {
   ConversationMessage,
   Education,
   Experience,
+  Project,
   SessionUser,
   ShortlistRecord,
   ShortlistStage,
@@ -88,81 +86,191 @@ function normaliseProfile(profile: CandidateProfile) {
   return nextProfile;
 }
 
-async function listPocketBaseProfiles() {
-  const client = await createPocketBaseAdminClient();
+// --------------------------------------------------------------------------
+// Turso DB helpers
+// --------------------------------------------------------------------------
 
-  if (!client) {
-    return null;
-  }
-
-  const profiles = await client
-    .collection(PB_COLLECTIONS.profiles)
-    .getFullList<CandidateProfile>({
-      sort: "-updated",
-    });
-
-  return profiles.map((item) => normaliseProfile(item));
+function dbRowToProfile(row: typeof profilesTable.$inferSelect): CandidateProfile {
+  return {
+    id: row.id,
+    userId: row.userId,
+    name: row.name,
+    email: row.email,
+    headline: row.headline ?? "",
+    summary: row.summary ?? "",
+    aiSummary: row.aiSummary ?? "",
+    roleRecommendations: (row.roleRecommendations as string[]) ?? [],
+    completionScore: row.completionScore ?? 0,
+    visibility: (row.visibility as "public" | "private") ?? "private",
+    shareToken: row.shareToken,
+    publishedAt: row.publishedAt ?? null,
+    pdfVersionHash: row.pdfVersionHash,
+    lastEditedDeviceId: row.lastEditedDeviceId ?? null,
+    lastConflictAt: row.lastConflictAt ?? null,
+    availability: row.availability ?? "Open to opportunities",
+    headlineSource: (row.headlineSource as "ai" | "manual") ?? "ai",
+    experiences: (row.experiences as Experience[]) ?? [],
+    skills: (row.skills as Skill[]) ?? [],
+    projects: (row.projects as Project[]) ?? [],
+    education: (row.education as Education[]) ?? [],
+    conversationLogs: (row.conversationLogs as AIConversationLog[]) ?? [],
+    updatedAt: row.updatedAt,
+  };
 }
 
-async function writePocketBaseProfile(profile: CandidateProfile) {
-  const client = await createPocketBaseAdminClient();
+function dbRowToUser(row: typeof usersTable.$inferSelect): SessionUser {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    password: row.password ?? undefined,
+    role: row.role as SessionUser["role"],
+    company: row.company ?? undefined,
+    designation: row.designation ?? undefined,
+    image: row.image ?? undefined,
+    demo: row.demo ?? false,
+    verified: row.verified ?? false,
+  };
+}
 
-  if (!client) {
+function dbRowToShortlist(row: typeof shortlistsTable.$inferSelect): ShortlistRecord {
+  return {
+    id: row.id,
+    recruiterId: row.recruiterId,
+    candidateId: row.candidateId,
+    stage: row.stage as ShortlistStage,
+    notes: row.notes ?? undefined,
+    addedAt: row.addedAt,
+  };
+}
+
+async function listTursoProfiles(): Promise<CandidateProfile[] | null> {
+  const db = getDb();
+  if (!db) return null;
+  try {
+    const rows = await db.select().from(profilesTable).orderBy(profilesTable.updatedAt);
+    return rows.map(dbRowToProfile).map(normaliseProfile);
+  } catch {
     return null;
   }
+}
 
+async function writeTursoProfile(profile: CandidateProfile): Promise<CandidateProfile | null> {
+  const db = getDb();
+  if (!db) return null;
   const payload = normaliseProfile(profile);
-
   try {
-    await client.collection(PB_COLLECTIONS.profiles).update(payload.id, payload);
+    await db
+      .insert(profilesTable)
+      .values({
+        id: payload.id,
+        userId: payload.userId,
+        name: payload.name,
+        email: payload.email,
+        headline: payload.headline,
+        summary: payload.summary,
+        aiSummary: payload.aiSummary,
+        roleRecommendations: payload.roleRecommendations,
+        completionScore: payload.completionScore,
+        visibility: payload.visibility,
+        shareToken: payload.shareToken,
+        publishedAt: payload.publishedAt ?? undefined,
+        pdfVersionHash: payload.pdfVersionHash,
+        lastEditedDeviceId: payload.lastEditedDeviceId ?? undefined,
+        lastConflictAt: payload.lastConflictAt ?? undefined,
+        availability: payload.availability,
+        headlineSource: payload.headlineSource,
+        experiences: payload.experiences,
+        skills: payload.skills,
+        projects: payload.projects,
+        education: payload.education,
+        conversationLogs: payload.conversationLogs,
+        updatedAt: payload.updatedAt,
+      })
+      .onConflictDoUpdate({
+        target: profilesTable.id,
+        set: {
+          name: payload.name,
+          email: payload.email,
+          headline: payload.headline,
+          summary: payload.summary,
+          aiSummary: payload.aiSummary,
+          roleRecommendations: payload.roleRecommendations,
+          completionScore: payload.completionScore,
+          visibility: payload.visibility,
+          shareToken: payload.shareToken,
+          publishedAt: payload.publishedAt ?? undefined,
+          pdfVersionHash: payload.pdfVersionHash,
+          lastEditedDeviceId: payload.lastEditedDeviceId ?? undefined,
+          lastConflictAt: payload.lastConflictAt ?? undefined,
+          availability: payload.availability,
+          headlineSource: payload.headlineSource,
+          experiences: payload.experiences,
+          skills: payload.skills,
+          projects: payload.projects,
+          education: payload.education,
+          conversationLogs: payload.conversationLogs,
+          updatedAt: payload.updatedAt,
+        },
+      });
+    return payload;
   } catch {
-    await client.collection(PB_COLLECTIONS.profiles).create(payload);
-  }
-
-  return payload;
-}
-
-async function listPocketBaseShortlists() {
-  const client = await createPocketBaseAdminClient();
-
-  if (!client) {
     return null;
   }
-
-  return client.collection(PB_COLLECTIONS.shortlists).getFullList<ShortlistRecord>({
-    sort: "-updated",
-  });
 }
 
-async function writePocketBaseShortlist(record: ShortlistRecord) {
-  const client = await createPocketBaseAdminClient();
-
-  if (!client) {
-    return null;
-  }
-
+async function listTursoShortlists(): Promise<ShortlistRecord[] | null> {
+  const db = getDb();
+  if (!db) return null;
   try {
-    await client.collection(PB_COLLECTIONS.shortlists).update(record.id, record);
+    const rows = await db.select().from(shortlistsTable);
+    return rows.map(dbRowToShortlist);
   } catch {
-    await client.collection(PB_COLLECTIONS.shortlists).create(record);
-  }
-
-  return record;
-}
-
-async function listPocketBaseUsers() {
-  const client = await createPocketBaseAdminClient();
-
-  if (!client) {
     return null;
   }
-
-  const users = await client.collection(PB_COLLECTIONS.users).getFullList<SessionUser>({
-    sort: "-created",
-  });
-
-  return users;
 }
+
+async function writeTursoShortlist(record: ShortlistRecord): Promise<ShortlistRecord | null> {
+  const db = getDb();
+  if (!db) return null;
+  try {
+    await db
+      .insert(shortlistsTable)
+      .values({
+        id: record.id,
+        recruiterId: record.recruiterId,
+        candidateId: record.candidateId,
+        stage: record.stage,
+        notes: record.notes,
+        addedAt: record.addedAt,
+      })
+      .onConflictDoUpdate({
+        target: shortlistsTable.id,
+        set: {
+          stage: record.stage,
+          notes: record.notes,
+        },
+      });
+    return record;
+  } catch {
+    return null;
+  }
+}
+
+async function listTursoUsers(): Promise<SessionUser[] | null> {
+  const db = getDb();
+  if (!db) return null;
+  try {
+    const rows = await db.select().from(usersTable);
+    return rows.map(dbRowToUser);
+  } catch {
+    return null;
+  }
+}
+
+// --------------------------------------------------------------------------
+// Public API
+// --------------------------------------------------------------------------
 
 function buildCandidateCards(
   profiles: CandidateProfile[],
@@ -189,50 +297,63 @@ function buildCandidateCards(
 }
 
 export async function getUserByEmail(email: string) {
-  if (hasPocketBaseConfig()) {
-    const users = await listPocketBaseUsers();
-    const match = users?.find((item) => item.email.toLowerCase() === email.toLowerCase());
-
-    if (match) {
-      return match;
-    }
+  if (hasTursoConfig()) {
+    const tursoUsers = await listTursoUsers();
+    const match = tursoUsers?.find((item) => item.email.toLowerCase() === email.toLowerCase());
+    if (match) return match;
   }
 
   return getStore().users.find((item) => item.email.toLowerCase() === email.toLowerCase()) ?? null;
 }
 
 export async function getUserById(userId: string) {
-  if (hasPocketBaseConfig()) {
-    const users = await listPocketBaseUsers();
-    const match = users?.find((item) => item.id === userId);
-
-    if (match) {
-      return match;
-    }
+  if (hasTursoConfig()) {
+    const tursoUsers = await listTursoUsers();
+    const match = tursoUsers?.find((item) => item.id === userId);
+    if (match) return match;
   }
 
   return getStore().users.find((item) => item.id === userId) ?? null;
 }
 
-export async function authenticateUser(email: string, password: string) {
-  if (hasPocketBaseConfig()) {
-    try {
-      const client = createPocketBaseClient();
-
-      if (client) {
-        const response = await client
-          .collection(PB_COLLECTIONS.users)
-          .authWithPassword<SessionUser>(email, password);
-
-        return response.record;
-      }
-    } catch {}
+export async function authenticateUser(email: string, password: string, roleHint?: string) {
+  if (hasTursoConfig()) {
+    const db = getDb();
+    if (db) {
+      try {
+        const rows = await db
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.email, email.toLowerCase()));
+        // If there are multiple rows (dual-role demo), pick by roleHint
+        const row = roleHint
+          ? (rows.find((r) => r.role === roleHint && r.password === password) ?? rows.find((r) => r.password === password))
+          : rows.find((r) => r.password === password);
+        if (row) {
+          return dbRowToUser(row);
+        }
+      } catch {}
+    }
   }
 
-  const demoMatch = demoUsers.find(
-    (item) =>
-      item.email.toLowerCase() === email.toLowerCase() && item.password === password,
-  );
+  const demoMatch =
+    roleHint
+      ? (demoUsers.find(
+          (item) =>
+            item.email.toLowerCase() === email.toLowerCase() &&
+            item.password === password &&
+            item.role === roleHint,
+        ) ??
+        demoUsers.find(
+          (item) =>
+            item.email.toLowerCase() === email.toLowerCase() &&
+            item.password === password,
+        ))
+      : demoUsers.find(
+          (item) =>
+            item.email.toLowerCase() === email.toLowerCase() &&
+            item.password === password,
+        );
 
   if (demoMatch) {
     return demoMatch;
@@ -268,15 +389,18 @@ export async function registerUser(input: {
     demo: input.email === "hire-me@anshumat.org",
   };
 
-  if (hasPocketBaseConfig()) {
-    const client = await createPocketBaseAdminClient();
-
-    if (client) {
-      await client.collection(PB_COLLECTIONS.users).create({
-        ...user,
-        password: input.password,
-        passwordConfirm: input.password,
-      });
+  if (hasTursoConfig()) {
+    const db = getDb();
+    if (db) {
+      await db.insert(usersTable).values({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        role: user.role,
+        verified: user.verified,
+        demo: user.demo,
+      }).onConflictDoNothing();
     }
   }
 
@@ -286,19 +410,23 @@ export async function registerUser(input: {
   if (user.role === "candidate") {
     const profile = createBlankProfile(user);
     store.profiles.push(profile);
-    await writePocketBaseProfile(profile);
+    await writeTursoProfile(profile);
   }
 
   return user;
 }
 
 export async function getCandidateProfile(userId: string) {
-  if (hasPocketBaseConfig()) {
-    const profiles = await listPocketBaseProfiles();
-    const match = profiles?.find((item) => item.userId === userId);
-
-    if (match) {
-      return match;
+  if (hasTursoConfig()) {
+    const db = getDb();
+    if (db) {
+      try {
+        const rows = await db
+          .select()
+          .from(profilesTable)
+          .where(eq(profilesTable.userId, userId));
+        if (rows[0]) return normaliseProfile(dbRowToProfile(rows[0]));
+      } catch {}
     }
   }
 
@@ -322,24 +450,32 @@ export async function getCandidateProfile(userId: string) {
 }
 
 export async function getPublishedProfileByShareToken(shareToken: string) {
-  const profiles = hasPocketBaseConfig()
-    ? (await listPocketBaseProfiles()) ?? getStore().profiles
-    : getStore().profiles;
+  if (hasTursoConfig()) {
+    const db = getDb();
+    if (db) {
+      try {
+        const rows = await db
+          .select()
+          .from(profilesTable)
+          .where(eq(profilesTable.shareToken, shareToken));
+        const row = rows.find((r) => Boolean(r.publishedAt));
+        if (row) return normaliseProfile(dbRowToProfile(row));
+      } catch {}
+    }
+  }
 
+  const profiles = getStore().profiles;
   return (
-    profiles?.find(
-      (item) => item.shareToken === shareToken && Boolean(item.publishedAt),
-    ) ?? null
+    profiles.find((item) => item.shareToken === shareToken && Boolean(item.publishedAt)) ?? null
   );
 }
 
 export async function listCandidates() {
-  const profiles = hasPocketBaseConfig()
-    ? (await listPocketBaseProfiles()) ?? getStore().profiles
-    : getStore().profiles;
-  const shortlists = hasPocketBaseConfig()
-    ? (await listPocketBaseShortlists()) ?? getStore().shortlists
-    : getStore().shortlists;
+  const tursoProfiles = hasTursoConfig() ? await listTursoProfiles() : null;
+  const tursoShortlists = hasTursoConfig() ? await listTursoShortlists() : null;
+
+  const profiles = tursoProfiles ?? getStore().profiles;
+  const shortlists = tursoShortlists ?? getStore().shortlists;
 
   return buildCandidateCards(profiles, shortlists).sort(
     (left, right) => right.matchScore - left.matchScore,
@@ -347,9 +483,8 @@ export async function listCandidates() {
 }
 
 export async function listShortlistsForRecruiter(recruiterId: string) {
-  const shortlists = hasPocketBaseConfig()
-    ? (await listPocketBaseShortlists()) ?? getStore().shortlists
-    : getStore().shortlists;
+  const tursoShortlists = hasTursoConfig() ? await listTursoShortlists() : null;
+  const shortlists = tursoShortlists ?? getStore().shortlists;
 
   return shortlists.filter((item) => item.recruiterId === recruiterId);
 }
@@ -369,7 +504,7 @@ export async function updateShortlistStage(input: {
   if (existing) {
     existing.stage = input.stage;
     existing.notes = input.notes ?? existing.notes;
-    await writePocketBaseShortlist(existing);
+    await writeTursoShortlist(existing);
     return deepClone(existing);
   }
 
@@ -383,7 +518,7 @@ export async function updateShortlistStage(input: {
   };
 
   store.shortlists.push(next);
-  await writePocketBaseShortlist(next);
+  await writeTursoShortlist(next);
 
   return deepClone(next);
 }
@@ -409,7 +544,7 @@ export async function saveProfile(profile: CandidateProfile, deviceId?: string) 
     store.profiles.push(prepared);
   }
 
-  await writePocketBaseProfile(prepared);
+  await writeTursoProfile(prepared);
 
   return deepClone(prepared);
 }
@@ -507,19 +642,20 @@ export async function deleteAccount(userId: string) {
     (item) => item.candidateId !== userId && item.recruiterId !== userId,
   );
 
-  if (hasPocketBaseConfig()) {
-    const client = await createPocketBaseAdminClient();
-
-    if (client) {
-      await client.collection(PB_COLLECTIONS.users).delete(userId).catch(() => null);
-      const profile = await client
-        .collection(PB_COLLECTIONS.profiles)
-        .getFirstListItem<CandidateProfile>(`userId="${userId}"`)
+  if (hasTursoConfig()) {
+    const db = getDb();
+    if (db) {
+      // Delete profile first (foreign key), then user — cascade handles it but be explicit
+      await db.delete(profilesTable).where(eq(profilesTable.userId, userId)).catch(() => null);
+      await db
+        .delete(shortlistsTable)
+        .where(eq(shortlistsTable.candidateId, userId))
         .catch(() => null);
-
-      if (profile?.id) {
-        await client.collection(PB_COLLECTIONS.profiles).delete(profile.id).catch(() => null);
-      }
+      await db
+        .delete(shortlistsTable)
+        .where(eq(shortlistsTable.recruiterId, userId))
+        .catch(() => null);
+      await db.delete(usersTable).where(eq(usersTable.id, userId)).catch(() => null);
     }
   }
 }

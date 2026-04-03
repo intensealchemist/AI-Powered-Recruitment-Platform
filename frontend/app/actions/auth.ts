@@ -23,14 +23,16 @@ export async function signInAction(
     return { error: "Too many sign in attempts. Please try again later." };
   }
 
-  const email = String(formData.get("email") ?? "").trim();
+  const email    = String(formData.get("email")    ?? "").trim();
   const password = String(formData.get("password") ?? "").trim();
+  // Optional role hint — lets the same demo credentials sign in as recruiter or candidate
+  const roleHint = String(formData.get("roleHint") ?? "").trim() || undefined;
 
   if (!email || !password) {
     return { error: "Enter your email and password." };
   }
 
-  const user = await authenticateUser(email, password);
+  const user = await authenticateUser(email, password, roleHint);
 
   if (!user) {
     return { error: "We could not sign you in with those credentials." };

@@ -30,13 +30,14 @@ A **conversation-first hiring experience** that replaces resume uploads with a s
 | Path | Purpose |
 |---|---|
 | `lib/groq.ts` | Groq API client — conversational extraction, JSON parsing, model fallback |
-| `lib/data.ts` | Data access layer — PocketBase reads/writes with in-memory demo fallback |
+| `lib/data.ts` | Data access layer — Turso reads/writes with in-memory demo fallback |
 | `lib/demo-data.ts` | Seeded demo profiles for offline/demo mode |
-| `lib/pocketbase.ts` | PocketBase client singleton |
-| `lib/auth.ts` | Auth helpers — session management, OAuth token exchange |
+| `lib/db/index.ts` | Turso (libSQL) + Drizzle ORM client singleton |
+| `lib/db/schema.ts` | Drizzle table schema definitions |
+| `lib/auth.ts` | Auth helpers — session management |
 | `lib/profile.ts` | Profile transformation and normalisation utilities |
 | `lib/types.ts` | Canonical type definitions (mirrored to frontend) |
-| `scripts/seed-pocketbase.ts` | Seeds demo users, candidate profiles, and shortlist records |
+| `scripts/seed-turso.ts` | Seeds demo users, candidate profiles, and shortlist records into Turso |
 | `prisma/migration.sql` | Raw SQL migration for reference |
 | `package.json` | Backend-only dependencies |
 
@@ -50,7 +51,7 @@ A **conversation-first hiring experience** that replaces resume uploads with a s
 | **Language** | TypeScript (strict) | End-to-end type safety across the frontend/backend boundary. Shared `types.ts` ensures candidate profile shapes never drift between the UI and the data layer. |
 | **Styling** | Tailwind CSS 4 | Utility-first styling keeps component markup self-documenting. v4's new engine removes the purge step and compiles 40 % faster than v3. |
 | **AI / LLM** | Groq API (Llama 3) | Sub-second inference latency makes real-time conversational extraction feel responsive. JSON-mode output eliminates fragile regex parsing. Automatic fallback to a secondary model handles rate limits gracefully. |
-| **Database** | PocketBase | Single-binary BaaS with built-in auth, real-time subscriptions, and a REST + typed SDK. Eliminates standing up a separate auth service. Swappable with Postgres via the in-memory fallback interface in `lib/data.ts`. |
+| **Database** | Turso (libSQL) + Drizzle ORM | Serverless SQLite at the edge — persistent across Vercel deployments, zero cold-start cost, generous free tier. Drizzle provides type-safe query building with schema-first migrations. Falls back to in-memory demo data when `TURSO_DATABASE_URL` is not set. |
 | **Client data** | TanStack Query v5 | Declarative server-state fetching for the recruiter dashboard. Stale-while-revalidate keeps the shortlist board live without polling noise. |
 | **PDF export** | `@react-pdf/renderer` | Renders ATS-friendly structured resumes from in-memory profile data — no HTML-to-PDF conversion heuristics, no layout surprises. |
 | **Forms** | React Hook Form + Zod | Uncontrolled form performance with schema-validated, type-safe field resolution. Zod schemas are shared between the server action validation layer and client-side error messages. |
@@ -64,7 +65,7 @@ A **conversation-first hiring experience** that replaces resume uploads with a s
 ### Prerequisites
 
 - Node.js ≥ 20
-- [PocketBase](https://pocketbase.io/docs/) binary running locally (or use demo/in-memory mode)
+- A free [Turso](https://app.turso.tech) account (or skip for in-memory demo mode)
 - A [Groq API key](https://console.groq.com/)
 
 ---
@@ -72,7 +73,7 @@ A **conversation-first hiring experience** that replaces resume uploads with a s
 ### 1. Clone
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/intensealchemist/AI-Powered-Recruitment-Platform
 cd AI-Powered-Recruitment-Platform
 ```
 
@@ -96,9 +97,16 @@ Fill in `.env.local`:
 ```env
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 GROQ_API_KEY=your_groq_api_key
-NEXT_PUBLIC_POCKETBASE_URL=http://127.0.0.1:8090
-POCKETBASE_ADMIN_EMAIL=admin@example.com
-POCKETBASE_ADMIN_PASSWORD=your_admin_password
+
+# Turso — get from https://app.turso.tech (leave blank for in-memory demo mode)
+TURSO_DATABASE_URL=libsql://your-db.turso.io
+TURSO_AUTH_TOKEN=your_turso_auth_token
+```
+
+Push the Drizzle schema to Turso (first time only):
+
+```bash
+npm run db:push
 ```
 
 Start the development server:
@@ -109,7 +117,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-> **No PocketBase?** The app automatically falls back to in-memory demo data. Leave `NEXT_PUBLIC_POCKETBASE_URL` blank and skip the seeding step.
+> **No Turso?** The app automatically falls back to in-memory demo data. Leave `TURSO_DATABASE_URL` blank and skip the seeding step.
 
 ---
 
@@ -126,27 +134,50 @@ Copy the environment template:
 cp .env.example .env
 ```
 
-Fill in `.env` with the same Groq and PocketBase values.
+Fill in `.env` with the same Groq and Turso values.
 
 ---
 
 ### 4. Seed demo data (optional)
 
-Start PocketBase first, then from the `backend/` directory:
+From the `backend/` directory (requires `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` in `.env.local`):
 
 ```bash
 npm run db:seed
 ```
 
-This creates demo users, candidate profiles, and shortlist records.
+This creates demo users, candidate profiles, and shortlist records in Turso.
+
+---
+
+## Live Demo
+
+**Vercel deployment:** [https://ai-powered-recruitment-platform-nu.vercel.app/](https://ai-powered-recruitment-platform-nu.vercel.app/)
 
 ---
 
 ## Demo Credentials
 
+The same credentials work for **both** roles. After signing in, the platform routes you based on the role you selected during sign-up.
+
 | Role | Email | Password |
 |---|---|---|
 | Candidate | `hire-me@anshumat.org` | `HireMe@2025!` |
+| Recruiter | `hire-me@anshumat.org` | `HireMe@2025!` |
+
+> **Tip for reviewers:** Sign in as candidate first to see the AI profile builder flow, then sign out and sign in as recruiter to see the dashboard, compare view, and shortlist Kanban.
+
+---
+
+## Wireframes
+
+Wireframes were iterated directly as production-quality code. The live app at the Vercel URL above is the interactive wireframe. The flow is:
+
+```
+Landing → Sign Up → AI Introduction → AI Profile Builder → Profile Review → Publish
+                                                                          ↕
+                                                     Recruiter Dashboard → Candidate Profile → Compare → Shortlist
+```
 
 ---
 
@@ -171,4 +202,4 @@ The platform treats the AI as a **structured interview layer**, not a document p
 | Resume upload | Reintroduces the formatting bias the product is designed to remove |
 | Traditional document parsing | Would re-anchor evaluation on PDF structure rather than candidate signal |
 | Separate job-posting workflow | Out of scope for v1; recruiter matching currently uses profile strength and seeded shortlist flows |
-| Dedicated auth server | PocketBase's built-in auth covers OAuth + email/password without a separate service |
+| Dedicated auth server | Email/password auth is handled in-platform; OAuth requires a dedicated provider (e.g. NextAuth.js) and is deferred to a future version |

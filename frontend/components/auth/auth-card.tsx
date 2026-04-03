@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
-import { Eye, EyeOff, Mail, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Mail, Sparkles, Briefcase, User } from "lucide-react";
 
 import { signInAction, signUpAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,9 @@ interface AuthCardProps {
 
 const initialState: AuthActionState = {};
 
+const DEMO_EMAIL = "hire-me@anshumat.org";
+const DEMO_PASSWORD = "HireMe@2025!";
+
 const GoogleIcon = () => (
   <svg className="size-4" viewBox="0 0 24 24" aria-hidden="true">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -25,48 +28,37 @@ const GoogleIcon = () => (
 );
 
 const GithubIcon = () => (
-  <svg
-    className="size-4 text-[var(--text-2)]"
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg className="size-4 text-[var(--text-2)]" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.02c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
   </svg>
 );
 
 export function AuthCard({ mode }: AuthCardProps) {
-  const [email, setEmail] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [email,           setEmail]           = useState("");
+  const [showPassword,    setShowPassword]     = useState(false);
+  /** For sign-in only: the role the demo user wants to enter as */
+  const [signInRoleHint,  setSignInRoleHint]   = useState<"candidate" | "recruiter">("candidate");
+
   const [state, formAction, pending] = useActionState(
     mode === "sign-in" ? signInAction : signUpAction,
     initialState,
   );
 
-  const isDemo = email.trim().toLowerCase() === "hire-me@anshumat.org";
-  const title = useMemo(
-    () =>
-      mode === "sign-in"
-        ? "Welcome back"
-        : "Create your account",
-    [mode],
-  );
-  const subtitle = useMemo(
-    () =>
-      mode === "sign-in"
-        ? "No resume upload required — just conversation."
-        : "Build a structured profile through natural conversation.",
-    [mode],
-  );
+  const isDemo = email.trim().toLowerCase() === DEMO_EMAIL;
+
+  const title    = mode === "sign-in" ? "Welcome back"          : "Create your account";
+  const subtitle = mode === "sign-in"
+    ? "No resume upload required — just conversation."
+    : "Build a structured profile through natural conversation.";
+
+  /* Feature bullets shown only on sign-up */
+  const bullets = useMemo(() => [
+    { emoji: "🤖", text: "AI extracts structure from natural conversation" },
+    { emoji: "🏷️", text: "Auto-suggests skills and generates your summary"  },
+    { emoji: "📄", text: "Export a bias-free PDF or share a public link"     },
+  ], []);
 
   return (
-    /* Full-page centering happens in the page wrapper */
     <div className="relative mx-auto w-full max-w-md">
       {/* Glow behind card */}
       <div
@@ -75,7 +67,8 @@ export function AuthCard({ mode }: AuthCardProps) {
       />
 
       <div className="relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[var(--bg-surface)]/80 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.7)] backdrop-blur-xl sm:p-10">
-        {/* Header */}
+
+        {/* ── Header ── */}
         <div className="mb-8 space-y-3 text-center">
           <div className="mx-auto inline-flex size-14 items-center justify-center rounded-[16px] bg-[var(--primary)] shadow-[0_0_24px_rgba(99,102,241,0.45)]">
             <Sparkles className="size-6 text-white" />
@@ -86,7 +79,19 @@ export function AuthCard({ mode }: AuthCardProps) {
           </div>
         </div>
 
-        {/* Social auth */}
+        {/* ── Feature bullets (sign-up only) ── */}
+        {mode === "sign-up" && (
+          <ul className="mb-6 space-y-2">
+            {bullets.map((b) => (
+              <li key={b.text} className="flex items-center gap-2.5 text-sm text-[var(--text-2)]">
+                <span className="text-base">{b.emoji}</span>
+                {b.text}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* ── Social auth ── */}
         <div className="mb-6 grid grid-cols-2 gap-3">
           <Link href="/api/oauth/google" className="block">
             <button
@@ -117,17 +122,20 @@ export function AuthCard({ mode }: AuthCardProps) {
           <div className="h-px flex-1 bg-white/[0.07]" />
         </div>
 
-        {/* Form */}
+        {/* ── Form ── */}
         <form action={formAction} className="space-y-4">
+
+          {/* Name — sign-up only */}
           {mode === "sign-up" && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-3)]" htmlFor="name">
                 Full name
               </label>
-              <Input id="name" name="name" placeholder="Ada Lovelace" autoComplete="name" />
+              <Input id="name" name="name" placeholder="Ada Lovelace" autoComplete="name" required />
             </div>
           )}
 
+          {/* Email */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-3)]" htmlFor="email">
               Email
@@ -140,9 +148,11 @@ export function AuthCard({ mode }: AuthCardProps) {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              required
             />
           </div>
 
+          {/* Password */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-3)]" htmlFor="password">
               Password
@@ -152,9 +162,10 @@ export function AuthCard({ mode }: AuthCardProps) {
                 id="password"
                 name="password"
                 type={showPassword ? "text" : "password"}
-                placeholder={isDemo ? "Try HireMe@2025!" : "Enter a secure password"}
+                placeholder={isDemo ? `Try ${DEMO_PASSWORD}` : mode === "sign-up" ? "Min 8 characters" : "Enter your password"}
                 autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
                 className="pr-12"
+                required
               />
               <button
                 type="button"
@@ -168,28 +179,83 @@ export function AuthCard({ mode }: AuthCardProps) {
             </div>
           </div>
 
+          {/* Role — sign-up always, sign-in only when demo email is detected */}
           {mode === "sign-up" && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide text-[var(--text-3)]" htmlFor="role">
                 I am joining as
               </label>
-              <select
-                id="role"
-                name="role"
-                defaultValue="candidate"
-                className="h-11 w-full rounded-[12px] border border-white/[0.08] bg-white/[0.04] px-4 text-sm text-[var(--text-1)] outline-none transition focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_rgba(99,102,241,0.18)]"
-              >
-                <option value="candidate">Candidate</option>
-                <option value="recruiter">Recruiter</option>
-              </select>
+              <div className="grid grid-cols-2 gap-2">
+                {(["candidate", "recruiter"] as const).map((r) => (
+                  <label
+                    key={r}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-[12px] border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm transition has-[:checked]:border-[var(--primary)] has-[:checked]:bg-[var(--primary-muted)]"
+                  >
+                    <input
+                      type="radio"
+                      name="role"
+                      value={r}
+                      defaultChecked={r === "candidate"}
+                      className="accent-[var(--primary)]"
+                    />
+                    {r === "candidate"
+                      ? <><User className="size-4 text-[var(--primary-light)]" /><span className="capitalize text-[var(--text-1)]">Candidate</span></>
+                      : <><Briefcase className="size-4 text-[var(--primary-light)]" /><span className="capitalize text-[var(--text-1)]">Recruiter</span></>
+                    }
+                  </label>
+                ))}
+              </div>
+              <p className="text-[11px] text-[var(--text-4)]">
+                Candidates build AI-guided profiles. Recruiters review and compare them.
+              </p>
             </div>
           )}
 
-          {/* Demo hint */}
+          {/* Demo role toggle — sign-in, demo email only */}
+          {mode === "sign-in" && isDemo && (
+            <>
+              {/* Hidden field consumed by the server action */}
+              <input type="hidden" name="roleHint" value={signInRoleHint} />
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-3)]">
+                  Demo — sign in as
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["candidate", "recruiter"] as const).map((r) => {
+                    const active = signInRoleHint === r;
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setSignInRoleHint(r)}
+                        className={[
+                          "flex items-center justify-center gap-2 rounded-[12px] border px-4 py-2.5 text-sm font-medium transition-all",
+                          active
+                            ? "border-[var(--primary)] bg-[var(--primary-muted)] text-[var(--primary-light)] shadow-[0_0_16px_rgba(99,102,241,0.2)]"
+                            : "border-white/[0.08] bg-white/[0.03] text-[var(--text-2)] hover:border-white/[0.16]",
+                        ].join(" ")}
+                      >
+                        {r === "candidate"
+                          ? <><User className="size-4" /> Candidate</>
+                          : <><Briefcase className="size-4" /> Recruiter</>
+                        }
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-[var(--text-4)]">
+                  Same password — choose which experience to preview.
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* Demo hint banner */}
           {isDemo && (
             <div className="rounded-[12px] border border-[var(--ai-border)] bg-[var(--ai-muted)] px-4 py-3 text-sm text-amber-300">
-              <span className="font-semibold">Demo account detected.</span> Use password{" "}
-              <span className="font-ai font-semibold">HireMe@2025!</span>
+              <span className="font-semibold">Demo account.</span>{" "}
+              Use password{" "}
+              <span className="font-ai font-semibold">{DEMO_PASSWORD}</span>
             </div>
           )}
 
@@ -200,7 +266,7 @@ export function AuthCard({ mode }: AuthCardProps) {
             </div>
           )}
 
-          <Button className="mt-2 w-full" disabled={pending} type="submit" size="lg">
+          <Button className="mt-2 w-full" disabled={pending} type="submit" size="lg" id={`${mode}-submit-btn`}>
             <Mail className="size-4" />
             {pending
               ? "Working…"

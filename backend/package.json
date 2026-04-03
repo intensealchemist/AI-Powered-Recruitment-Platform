@@ -4,16 +4,19 @@
   "private": true,
   "description": "Backend scripts, data layer, AI integration, and DB tooling for the AI-Powered Recruitment Platform.",
   "scripts": {
-    "db:seed": "tsx scripts/seed-pocketbase.ts"
+    "db:seed": "tsx scripts/seed-turso.ts"
   },
   "dependencies": {
     "groq-sdk": "^1.1.2",
-    "pocketbase": "^0.26.8",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "@libsql/client": "^0.14.0",
+    "drizzle-orm": "^0.36.0",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "@types/node": "^20",
     "tsx": "^4.21.0",
+    "drizzle-kit": "^0.28.0",
     "typescript": "^5"
   }
 }

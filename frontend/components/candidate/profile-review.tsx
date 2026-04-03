@@ -77,9 +77,8 @@ export function ProfileReview({ initialProfile }: { initialProfile: CandidatePro
           <Button
             onClick={() =>
               startTransition(async () => {
-                const next = await publishProfileAction();
-                setProfile(next);
-                toast.success("Profile published.");
+                await publishProfileAction();
+                // Server action redirects to /candidate/confirmation — no client state update needed
               })
             }
             type="button"
