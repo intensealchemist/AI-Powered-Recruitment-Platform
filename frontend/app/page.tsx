@@ -73,15 +73,15 @@ export default async function Home() {
         {/* Background gradient layer */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10"
+          className="pointer-events-none absolute inset-0 -z-10 animate-in fade-in duration-1000"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(99,102,241,0.18),transparent)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_35%_at_80%_60%,rgba(251,191,36,0.07),transparent)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(99,102,241,0.18),transparent)] animate-pulse" style={{ animationDuration: "5s" }} />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_35%_at_80%_60%,rgba(251,191,36,0.07),transparent)] animate-pulse" style={{ animationDuration: "7s", animationDelay: "2s" }} />
         </div>
 
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1fr_480px] lg:items-center">
           {/* Left — copy */}
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
             <Badge className="border-[var(--primary-border)] bg-[var(--primary-muted)] px-3 py-1 text-[var(--primary-light)]">
               <Sparkles className="size-3" />
               Conversation-first hiring
@@ -136,14 +136,15 @@ export default async function Home() {
           </div>
 
           {/* Right — floating AI conversation demo */}
-          <div className="relative">
+          <div className="relative animate-in fade-in slide-in-from-right-8 duration-1000 fill-mode-both delay-300">
             {/* Glow behind card */}
             <div
               aria-hidden="true"
-              className="absolute -inset-4 rounded-[32px] bg-[var(--primary-muted)] blur-2xl"
+              className="absolute -inset-4 rounded-[32px] bg-[var(--primary-muted)] blur-3xl opacity-70 animate-pulse"
+              style={{ animationDuration: "6s" }}
             />
 
-            <div className="relative overflow-hidden rounded-[24px] border border-white/[0.1] bg-[#0E1023]/90 shadow-[0_24px_80px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+            <div className="relative overflow-hidden rounded-[24px] border border-white/[0.12] bg-[#0E1023]/40 shadow-[0_32px_80px_rgba(0,0,0,0.6)] backdrop-blur-2xl transition-transform duration-700 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(99,102,241,0.25)]">
               {/* Card header */}
               <div className="flex items-center gap-2 border-b border-white/[0.07] px-5 py-3.5">
                 <div className="flex gap-1.5">
@@ -244,14 +245,18 @@ export default async function Home() {
             <div
               key={feature.title}
               className={[
-                "group rounded-[20px] border border-white/[0.06] bg-white/[0.02] p-6",
-                "hover:border-white/[0.12] hover:bg-white/[0.04]",
-                "transition-all duration-300 hover:-translate-y-1",
-                "hover:shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
+                "group rounded-[20px] border border-white/[0.06] bg-white/[0.01] p-6 backdrop-blur-xl relative overflow-hidden",
+                "hover:border-white/[0.15] hover:bg-white/[0.04]",
+                "transition-all duration-500 hover:-translate-y-2",
+                "hover:shadow-[0_24px_48px_rgba(0,0,0,0.6)]",
+                "animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both"
               ].join(" ")}
-              style={{ animationDelay: `${i * 0.08}s` }}
+              style={{ animationDelay: `${(i * 0.1) + 0.5}s` }}
             >
-              <div className="mb-4 inline-flex size-10 items-center justify-center rounded-[12px] bg-[var(--primary-muted)] border border-[var(--primary-border)] text-[var(--primary-light)] transition-all group-hover:shadow-[0_0_18px_rgba(99,102,241,0.22)]">
+              {/* Glass subtle gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+              
+              <div className="relative mb-4 inline-flex size-10 items-center justify-center rounded-[12px] bg-[var(--primary-muted)] border border-[var(--primary-border)] text-[var(--primary-light)] transition-all duration-500 group-hover:shadow-[0_0_24px_rgba(99,102,241,0.4)] group-hover:scale-110">
                 <feature.icon className="size-5" />
               </div>
               <h3 className="mb-2 text-base font-semibold text-[var(--text-1)]">
@@ -267,7 +272,12 @@ export default async function Home() {
 
       {/* ── DEMO CREDENTIALS ──────────────────────────────────────────── */}
       <section id="demo-accounts" className="mx-auto max-w-2xl scroll-mt-24">
-        <div className="rounded-[20px] border border-[var(--ai-border)] bg-[var(--ai-muted)] p-8 text-center">
+        <div className="rounded-[20px] border border-[var(--ai-border)] bg-[var(--bg-surface)] p-8 text-center relative overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.6)] backdrop-blur-xl animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both" style={{ animationDelay: "0.8s" }}>
+          
+          {/* Glass background fill */}
+          <div className="absolute inset-0 bg-[var(--ai-muted)] opacity-50 blur-3xl" />
+          
+          <div className="relative">
           <Sparkles className="mx-auto mb-3 size-6 text-[var(--ai)]" />
           <p className="text-sm font-semibold uppercase tracking-widest text-[var(--ai)]">
             Demo account
@@ -281,13 +291,14 @@ export default async function Home() {
           <p className="mt-4 text-sm text-[var(--text-3)] max-w-md mx-auto">
             The exact same credentials work for <strong>both</strong> Candidate and Recruiter views. The log-in screen has a toggle to pick which assignment requirement you want to grade!
           </p>
-          <div className="mt-5">
+          <div className="mt-5 relative">
             <Link href="/sign-in">
-              <Button variant="amber" type="button">
+              <Button variant="amber" type="button" className="shadow-[0_0_24px_rgba(251,191,36,0.15)] transition-all hover:shadow-[0_0_32px_rgba(251,191,36,0.3)] hover:-translate-y-0.5">
                 Try the demo
                 <ArrowRight className="size-4" />
               </Button>
             </Link>
+          </div>
           </div>
         </div>
       </section>
